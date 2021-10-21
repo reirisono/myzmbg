@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="X-UA-Compatible" content="ie=edge">
+
+<title>myzmbg</title>
+<script type="text/javascript" src="myzmbg.js" async></script>
+<style>
+body {
+	position: relative;
+	width: 100%;
+	background-color:#fafafa;
+	margin: 0;
+	overflow-x: hidden;
+	font-family: Helvetica, Arial, sans-serif;
+	font-size: 9pt;
+}
+canvas{
+	/*float:right;*/
+	display:inline-block;
+	vertical-align:top;
+	border: 1px dotted blue;
+}
+.navbar{
+	display:inline-block;
+	vertical-align:top;
+	padding:0 1em;
+	border: 1px dotted red;
+	width: 360px;
+}
+label{
+	display:inline-block;
+	width: 45ex;
+}
+input[type='text']{
+	width: 6ex;
+	text-align:right;
+}
+</style>
+</head>
+<body onload="main()">
+<div class="navbar">
+<h1>黛灰っぽい背景</h1>
+<p>Set parameters. Keep clicking "Submit" until you get what you like. Right-click to download.</p>
+<h2>Scales</h2>
+<label for="crop_wu">Canvas width (pixels):</label>
+<input type="text" id="crop_wu" value="1080" /><br/><!--270-->
+<label for="crop_hu">Canvas height (pixels):</label>
+<input type="text" id="crop_hu" value="2340" /><br/><!--585-->
+<label for="triangle_wu">Triangle width (pixels):</label>
+<input type="text" id="triangle_wu" value="138.6" /><br/>
+<label for="triangle_hu">Triangle height (pixels):</label>
+<input type="text" id="triangle_hu" value="120" /><br/>
+
+<h2>Triangle color mix</h2>
+<label for="maxmixratio">Max mix ratio (0-1; larger=see more of mix color):</label>
+<input type="text" id="maxmixratio" value="0.3" /><br/>
+
+<h2>Triangle opacity transition</h2>
+<label for="transpcap_prop">Location (0=top, 1=bottom):</label>
+<input type="text" id="transpcap_prop" value="0.45" /><br/>
+<label for="alpha_atan_compress">Suddenness (large=sudden; small=gradual):</label>
+<input type="text" id="alpha_atan_compress" value="50" /><br/>
+<label for="alpha_rand_range">Transparency level scattering (large=more scattered)</label>
+<input type="text" id="alpha_rand_range" value="10" /><br/>
+
+<h2>Logo</h2>
+<label for="logo_y_prop">vertical location of center (0-1; small=top, large=bottom)</label>
+<input type="text" id="logo_y_prop" value="0.25" /><br/>
+<label for="logo_r_prop">radius-to-width proportion (0-1)</label>
+<input type="text" id="logo_r_prop" value="0.8" /><br/>
+<label for="logo_alpha">transparency (0-1; 0=invisible, 1=bright)</label>
+<input type="text" id="logo_alpha" value="0.3" /><br/>
+
+<br/>
+<label for="scale">Scale (recommended 0.25 for test & 1 for download):</label>
+<input type="text" id="scale" value="0.25" /><br/>
+<input type="button" id="submit" value="submit" onclick="main()" />
+<!--<a href="#" class="button" id="btn-download" download="myzmbg.png">Download</a>-->
+<h2>Debug area</h2>
+<p id="debug"></p>
+</div>
+<canvas></canvas>
+</body>
+</html>
