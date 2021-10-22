@@ -17,7 +17,7 @@ triangle_wu = 138.6;
 triangle_hu = 120;//unit length (px) of the triangle height
 
 ///triangle color mixture parameters
-maxmixratio = 0.3;
+maxmixratio = 0.25;
 
 ///triangle transparency parameters
 transpcap_prop = 0.45; //the positional threshold of triangles to turn 50% semi-transparent on average. 0 = at top = most are not semi-transparent, 1 = at bottom = mostly semi-transparent.
