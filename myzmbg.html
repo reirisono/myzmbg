@@ -29,11 +29,11 @@ canvas{
 	vertical-align:top;
 	padding:0 1em;
 	border: 1px dotted red;
-	width: 360px;
+	width: 400px;
 }
 label{
 	display:inline-block;
-	width: 45ex;
+	width: 55ex;
 }
 input[type='text']{
 	width: 6ex;
@@ -44,40 +44,42 @@ input[type='text']{
 <body onload="main()">
 <div class="navbar">
 <h1>黛灰っぽい背景</h1>
-<p>Set parameters. Keep clicking "Submit" until you get what you like. Right-click to download.</p>
-<h2>Scales</h2>
-<label for="crop_wu">Canvas width (pixels):</label>
+<p>詳細は<a href="https://reirisono.github.io/myzmbg/index.html">README</a>をご参照ください。日本語と英語があります。Please refer to <a href="https://reirisono.github.io/myzmbg/index.html">README</a> for details.</p>
+<p>端的に：パラメータを入力。気に入った画像が出るまで "submit" ボタンを押して右クリDL. 各自白枠内を切り抜いてもろて。</p>
+<p>In short: Set parameters. Keep clicking "submit" until you get what you like. Right-click to download. Crop inside the white border locally.</p>
+<h2>大きさ / Sizes & Scales</h2>
+<label for="scale">スケール (テストでは0.25, DL用には1を推奨)<br>Scale (recommended 0.25 for test & 1 for download):</label>
+<input type="text" id="scale" value="0.25" /><br/>
+<label for="crop_wu">キャンバス横幅（ピクセル）/ Canvas width (pixels):</label>
 <input type="text" id="crop_wu" value="1080" /><br/><!--270-->
-<label for="crop_hu">Canvas height (pixels):</label>
+<label for="crop_hu">キャンバス縦幅（ピクセル）/ Canvas height (pixels):</label>
 <input type="text" id="crop_hu" value="2340" /><br/><!--585-->
-<label for="triangle_wu">Triangle width (pixels):</label>
+<label for="triangle_wu">三角形横幅（ピクセル）/ Triangle width (pixels):</label>
 <input type="text" id="triangle_wu" value="138.6" /><br/>
-<label for="triangle_hu">Triangle height (pixels):</label>
+<label for="triangle_hu">三角形縦幅（ピクセル）/ Triangle height (pixels):</label>
 <input type="text" id="triangle_hu" value="120" /><br/>
 
-<h2>Triangle color mix</h2>
-<label for="maxmixratio">Max mix ratio (0-1; larger=see more of mix color):</label>
+<h2>三角形の色の混ざり具合 / Triangle color mix</h2>
+<label for="maxmixratio">ノイズ色の最大混入率（0-1; 大きいほどノイズ色が目立つ）<br>Noise color max mix ratio (0-1; larger=see more of mix color):</label>
 <input type="text" id="maxmixratio" value="0.25" /><br/>
 
-<h2>Triangle opacity transition</h2>
-<label for="transpcap_prop">Location (0=top, 1=bottom):</label>
+<h2>三角形の透明度の移行 /<br>Triangle transparency transition</h2>
+<label for="transpcap_prop">位置（0=上辺、1=下辺）<br>Location (0=top, 1=bottom):</label>
 <input type="text" id="transpcap_prop" value="0.45" /><br/>
-<label for="alpha_atan_compress">Suddenness (large=sudden; small=gradual):</label>
+<label for="alpha_atan_compress">緩急（大きいほど急、小さいほどゆるやか）<br>Suddenness (large=sudden; small=gradual):</label>
 <input type="text" id="alpha_atan_compress" value="50" /><br/>
-<label for="alpha_rand_range">Transparency level scattering (large=more scattered)</label>
+<label for="alpha_rand_range">不均一さ（大きいほどバラける）<br>Unevenness (large=more scattered)</label>
 <input type="text" id="alpha_rand_range" value="10" /><br/>
 
-<h2>Logo</h2>
-<label for="logo_y_prop">vertical location of center (0-1; small=top, large=bottom)</label>
+<h2>灰ロゴ / The Logo</h2>
+<label for="logo_y_prop">中心点の縦位置（0-1; 小さいほど上、大きいほど下）<br>vertical location of center (0-1; small=top, large=bottom)</label>
 <input type="text" id="logo_y_prop" value="0.25" /><br/>
-<label for="logo_r_prop">radius-to-width proportion (0-1)</label>
+<label for="logo_r_prop">直径：画像幅の比率 (0-1)<br>diameter-to-width proportion (0-1)</label>
 <input type="text" id="logo_r_prop" value="0.8" /><br/>
-<label for="logo_alpha">transparency (0-1; 0=invisible, 1=bright)</label>
+<label for="logo_alpha">不透明度 (0-1; 0=見えない, 1=フル原色)<br>transparency (0-1; 0=invisible, 1=bright)</label>
 <input type="text" id="logo_alpha" value="0.3" /><br/>
 
 <br/>
-<label for="scale">Scale (recommended 0.25 for test & 1 for download):</label>
-<input type="text" id="scale" value="0.25" /><br/>
 <input type="button" id="submit" value="submit" onclick="main()" />
 <!--<a href="#" class="button" id="btn-download" download="myzmbg.png">Download</a>-->
 <h2>Debug area</h2>
