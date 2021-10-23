@@ -16,8 +16,16 @@ crop_hu = 2340;
 triangle_wu = 138.6;
 triangle_hu = 120;//unit length (px) of the triangle height
 
-///triangle color mixture parameters
+///triangle color parameters
+color_above = [65,125,112,0.1];
+color_below = [0,80,131,0.8];
+color_noise = [65,175,112];
 maxmixratio = 0.25;
+/*
+basecolor = [8,103,118];
+mixcolors = [[0,0,0],[255,100,100]];
+color = color_mix(basecolor,mixcolors,0.2);
+*/
 
 ///triangle transparency parameters
 transpcap_prop = 0.45; //the positional threshold of triangles to turn 50% semi-transparent on average. 0 = at top = most are not semi-transparent, 1 = at bottom = mostly semi-transparent.
@@ -157,25 +165,9 @@ class IsosTiles {
 		}
 		//debug.innerHTML += "<br>at generation, colormix_at_coords has "+this.colormix_at_coords.length+" rows.";
 	}
-	stringify_colormix = () =>{
-		document.getElementById("colormix_old").value = "";
-		for(let i=0; i<this.colormix_at_coords.length; i++){
-			document.getElementById("colormix_old").value += "ROW "+i+" ";
-			for(let j=0; j<this.colormix_at_coords[i].length; j++){
-				for(let k=0; k<this.colormix_at_coords[i][j].length; k++){
-					document.getElementById("colormix_old").value += 
-						"("+i+","+j+","+k+"):"
-						+"proportion="+this.colormix_at_coords[i][j][k].proportion
-						+";mixratio_norm="+this.colormix_at_coords[i][j][k].mixratio_norm
-						+";color="+this.colormix_at_coords[i][j][k].color
-						+"|";
-				}
-			}
-		}
-	}
-	copy_old_colormix = (colormix_old_string) =>{
-		///de-stringify and copy old colormix if the first 2 dimensions of colormix_old is the same as those of this.colormix_at_coords. Do nothing if different.
-		let colormix_old = destringify_colormix(colormix_old_string);
+	copy_old_colormix = (tri_colormix_old_string) =>{
+		///de-stringify and copy old colormix if the first 2 dimensions of tri_colormix_old is the same as those of this.colormix_at_coords. Do nothing if different.
+		let colormix_old = JSON.parse(tri_colormix_old_string);
 		/*
 		debug.innerHTML += "<br>in old colormix,";
 		for(let i=0; i<colormix_old.length; i++){
@@ -272,7 +264,7 @@ class IsosTiles {
 				
 			}
 		}
-		this.stringify_colormix();
+		document.getElementById("tri_colormix_old").value = JSON.stringify(this.colormix_at_coords);
 	}
 }
 
@@ -414,55 +406,6 @@ function expand_coords(xyn,w,a){
 	return coords;
 }
 
-function destringify_colormix(colormix_string){
-	let varnames = ["proportion","mixratio_norm","color"];
-	let colormix = new Array();
-	let rows = colormix_string.split("ROW ").slice(1);
-	//let coord_ary = colormix_string.split("\n");
-	let coord_ary = '', coord_and_payload='', ijk='', kv='', value='', c={};
-	for(let i=0; i<rows.length; i++){
-		colormix.push(new Array());
-		//debug.innerHTML += "<br>entering row "+i;
-		coord_ary = rows[i].split(" ");
-		coord_ary = coord_ary[1].split("|");//discarding the leading text "ROW \d+ "
-		//debug.innerHTML += "<br>"+coord_ary;
-		for(let j=0; j<coord_ary.length-1; j++){
-			//debug.innerHTML += "<br>original string "+coord_ary[j];
-			coord_and_payload = coord_ary[j].split(':');
-			ijk = coord_and_payload[0].substr(1,coord_and_payload[0].length-2).split(',');
-			//debug.innerHTML += "<br>coordinate "+ijk+" has ";
-			c={};
-			for(let v=0; v<varnames.length; v++){
-				//debug.innerHTML += varnames[v];
-				kv = coord_and_payload[1].match(RegExp(varnames[v]+"=[\\d\\.\\,]+","g"));
-				value = kv[0].substr(varnames[v].length+1,kv[0].length-1);
-				//debug.innerHTML += " "+value+" ";
-				
-				if(varnames[v]=="proportion" || varnames[v]=="mixratio_norm"){
-					c[varnames[v]]=parseFloat(value);
-				}
-				else{
-					value = value.split(",");
-					for(let w=0; w<value.length; w++){
-						value[w]=parseFloat(value[w]);
-					}
-					c[varnames[v]]=value;
-				}
-				//debug.innerHTML += varnames[v] + " = " + c[varnames[v]];
-				
-			}
-			if(ijk[1] > colormix[i].length-1){
-				for(let x=colormix[i].length; x<=ijk[1]; x++){
-					colormix[i].push(new Array());
-				}
-			}
-			colormix[i][ijk[1]].push(c);
-			//debug.innerHTML += "<br>pushed to "+ijk[0]+","+ijk[1];
-		}
-	}
-	return colormix;
-}
-
 class BarGraph {
 	/*draws a vertical, upward oriented bar graph*/
 	constructor(orig_x, orig_y, bar_w, bar_s, h_array, fillStyle, alpha){
@@ -566,6 +509,55 @@ function color_mix(basecolor,mixcolors,maxmixratio, proportion=undefined, mixrat
 	return {proportion, mixratio_norm, color};
 }
 
+function surroundings(seed_loc,n_rows,n_cols){
+	//debug.innerHTML += "<br>defining surroundings";
+	let surr = new Array();
+	for(let r=seed_loc[0]-1; r<=seed_loc[0]+1; r++){
+		//if(r<0 || r>=n_rows){continue;}
+		for(let c=seed_loc[1]-1; c<=seed_loc[1]+1; c++){
+			//if(c<0 || c>=n_cols){continue;}
+			//debug.innerHTML += "<br>trying r,c = "+r+","+c;
+			if(r==seed_loc[0] && c==seed_loc[1]){continue;}
+			//debug.innerHTML += "<br>push it";
+			surr.push([r,c]);
+		}
+	}
+	return surr;
+}
+function define_rim(cluster_locs,n_rows,n_cols){
+	//debug.innerHTML += "<br>defining rim for cluster "+cluster_locs;
+	let rim = new Array(), rim_temp = '';
+	for(let n=0; n<cluster_locs.length; n++){
+		//debug.innerHTML += "<br>current rim is "+rim;
+		//debug.innerHTML += "<br>on cluster member "+cluster_locs[n];
+		rim_temp = surroundings(cluster_locs[n],n_rows,n_cols);
+		//debug.innerHTML += "<br>surroundings = "+rim_temp;
+		for(let r=0; r<rim_temp.length; r++){
+			//debug.innerHTML += "<br>for the rim candidate "+rim_temp[r]+",";
+			//debug.innerHTML += "<br> is it included in rim? "+rim.includes(rim_temp[r]);
+			//debug.innerHTML += "<br> is it included in cluster? "+cluster_locs.includes(rim_temp[r]);
+			if(rim.includes(rim_temp[r]) || cluster_locs.includes(rim_temp[r])){continue;}
+			//debug.innerHTML += "<br>adding to rim";
+			rim.push(rim_temp[r]);
+		}
+	}
+	return rim;
+}
+function make_cluster(seed_loc,cluster_size,n_rows,n_cols){
+	//debug.innerHTML += "<br>making cluster";
+	let cluster_locs = [seed_loc], rim_temp = '', i=0;
+	for(let n=0; n<cluster_size-1; n++){
+		//debug.innerHTML += "<br>current cluster size = "+n;
+		//debug.innerHTML += "<br>current cluster locs are "+cluster_locs;
+		rim_temp = define_rim(cluster_locs,n_rows,n_cols);
+		//debug.innerHTML += "<br>returned rim_temp "+rim_temp;
+		i = Math.floor(Math.random()*rim_temp.length);
+		//debug.innerHTMML += "<br>randomly add the "+i+"-th rim to the cluster: r,c = "+rim_temp[i];
+		cluster_locs.push(rim_temp[i]);
+	}
+	return cluster_locs;
+}
+
 /************************* EXECUTE *************************/
 /****** dynamic elements (altered by user inputs) ******/
 function main() {
@@ -583,6 +575,9 @@ function main() {
 	triangle_hu = parseFloat(document.getElementById("triangle_hu").value);
 	
 	///triangle color mixture parameters
+	color_above = document.getElementById("color_above").value.split(",").map(Number);
+	color_below = document.getElementById("color_below").value.split(",").map(Number);
+	color_noise = document.getElementById("color_noise").value.split(",").map(Number);
 	maxmixratio = parseFloat(document.getElementById("maxmixratio").value);
 
 	///triangle transparency parameters
@@ -595,9 +590,15 @@ function main() {
 	logo_r_prop = parseFloat(document.getElementById("logo_r_prop").value);
 	logo_alpha = parseFloat(document.getElementById("logo_alpha").value);
 	
+	///letter matrix parameters
+	color_letters = document.getElementById("color_letters").value;
+	
 	///old state
-	colormix_keep = (document.getElementById("colormix_keep_yn").checked)?true:false;
-	colormix_old_string = document.getElementById("colormix_old").value;
+	tri_colormix_keep = (document.getElementById("tri_colormix_keep_yn").checked)?true:false;
+	tri_colormix_old_string = document.getElementById("tri_colormix_old").value;
+	letter_loc_keep = (document.getElementById("letter_loc_keep_yn").checked)?true:false;
+	nummatr_old_string = document.getElementById("nummatr_old").value;
+	cluster_locs_old_string = document.getElementById("cluster_locs_old").value;
 	
 	setScale();
 	debug.innerHTML = 'width '+cvs.width+', height '+cvs.height;
@@ -656,22 +657,84 @@ function main() {
 	/*let tri = new IsoscelesTriangle(100,200,24,34,30,[8,103,118].join());//"8,103,118"
 	tri.draw();
 	*/
-	/*
-	basecolor = [8,103,118];
-	mixcolors = [[0,0,0],[255,100,100]];
-	color = color_mix(basecolor,mixcolors,0.2);
-	debug.innerHTML += "<br>mixed color is "+color;
-	*/
-	/****** draw a grid of offsets ******/
+	
+	/****** draw a matrix of numbers ******/
+	line_ht = 9;
+	n_letters = Math.ceil(cvs.width / 5.4 / 2);
+	n_lines = Math.ceil(cvs.height / line_ht);
+	//debug.innerHTML += "<br>n_letters = "+n_letters+", n_lines = "+n_lines;
+	n_tot = n_letters * n_lines;
+	seed_ratio = 0.05;//proportion of shining letter seeds to total # of letters
+	max_cluster_size = 7;
+
+	///prepare the number matrix and cluster locations
+	debug.innerHTML += "<br>preparing nummatr and cluster_locs";
+	nummatr = [];
+	cluster_locs = [];
+	if(letter_loc_keep & nummatr_old_string != ""){
+		nummatr_old = JSON.parse(nummatr_old_string);
+		cluster_locs_old = JSON.parse(cluster_locs_old_string); 
+		if(nummatr_old.length == n_lines && nummatr_old[0].length == n_letters){
+			nummatr = nummatr_old;
+			cluster_locs = cluster_locs_old;
+		}
+	}
+	else{
+		for(let l=0; l<n_lines; l++){
+			nummatr.push(Array(n_letters).fill().map(() => Math.floor(Math.random() * 10)));
+		}
+		seed_locs = Array(Math.floor(n_tot * seed_ratio)).fill().map(() => Math.floor(Math.random() * n_tot));
+		cluster_sizes = Array(seed_locs.length).fill().map(() => Math.floor(Math.pow(Math.random(),3)*max_cluster_size)+1);
+		//debug.innerHTML += "<br>"+cluster_sizes;
+		for(let s=0; s<seed_locs.length; s++){
+			row = Math.floor(seed_locs[s]/n_letters);
+			col = seed_locs[s]%n_letters;
+			//debug.innerHTML += "<br>row,col = "+row+","+col;
+			cluster_locs.push(make_cluster([row,col],cluster_sizes[s],n_lines,n_letters));
+			//debug.innerHTML += "<br>cluster locs = "+cluster_locs[s];
+		}
+	}
+	///de-stringify and pass current nummatr to cluster_locs
+	document.getElementById("nummatr_old").value = JSON.stringify(nummatr);
+	document.getElementById("cluster_locs_old").value = JSON.stringify(cluster_locs);
+	///display the number matrix
+	c.save();
+	c.font = "9px Courier New";
+	c.textAlign = "left";
+	c.fillStyle="#FFFFFF";
+	c.globalAlpha=0.2;
+	for(let l=0; l<n_lines; l++){
+		nums = nummatr[l].join(" ");
+		c.fillText(nums,0,line_ht*(l+1));
+	}
+	///display shining number clusters
+	c.fillStyle="rgb("+color_letters+")";
+	c.globalAlpha=1;
+	c.filter = "blur(2px)";
+	for(let s=0; s<cluster_locs.length; s++){
+		for(let n=0; n<cluster_locs[s].length; n++){
+			if(cluster_locs[s][n][0]<0 || cluster_locs[s][n][0]>=n_lines
+				|| cluster_locs[s][n][1]<0 || cluster_locs[s][n][1]>=n_letters){continue;}
+			letter = nummatr[cluster_locs[s][n][0]][cluster_locs[s][n][1]];
+			///make an array filled with space character followed by the character to shine
+			string = " ".repeat(cluster_locs[s][n][1]*2) + letter;
+			//debug.innerHTML += "<br>"+string;
+			c.fillText(string,0,line_ht*(cluster_locs[s][n][0]+1));
+		}
+	}
+	c.restore();
+	/****** draw a grid of triangles ******/
 	debug.innerHTML += "<br>draw grid";
 	tiles = new IsosTiles(
 		11,22,
 		triangle_w,triangle_h,0,
-		[[65,125,112,0.1],[0,80,131,0.8]], [[65,175,112]], maxmixratio
-	);//noisecolor: [65,175,112] pale green;[207,105,244],[255,0,0]; second basecolor_grad[0,80,131,0.8]
-	if(colormix_keep){
+		[color_above,color_below],[color_noise], maxmixratio
+	);
+	//[[65,125,112,0.1],[0,80,131,0.8]], [[65,175,112]]
+	//noisecolor: [65,175,112] pale green;[207,105,244],[255,0,0]; second basecolor_grad[0,80,131,0.8]
+	if(tri_colormix_keep){
 		//use old tiles inheriting the colors and transparencies
-		tiles.copy_old_colormix(colormix_old_string);
+		tiles.copy_old_colormix(tri_colormix_old_string);
 	}
 	tiles.draw();
 

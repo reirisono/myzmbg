@@ -7,7 +7,7 @@
 <meta http-equiv="X-UA-Compatible" content="ie=edge">
 
 <title>myzmbg</title>
-<script type="text/javascript" src="myzmbg.js" async></script>
+<script type="text/javascript" src="myzmbg.js" async></script><!--myzmbg.js has no moving bg-->
 <style>
 body {
 	position: relative;
@@ -29,7 +29,7 @@ canvas{
 	vertical-align:top;
 	padding:0 1em;
 	border: 1px dotted red;
-	width: 400px;
+	width: 450px;
 }
 label{
 	display:inline-block;
@@ -38,16 +38,20 @@ label{
 input[type='text']{
 	width: 6ex;
 	text-align:right;
+	font-size: 9pt;
+}
+input[type='text'].long{
+	width: 15ex;
 }
 </style>
 </head>
 <body onload="main()">
 <div class="navbar">
 <h1>黛灰っぽい背景</h1>
-<p>詳細は<a href="https://reirisono.github.io/myzmbg/index.html">README</a>をご参照ください。日本語と英語があります。Please refer to <a href="https://reirisono.github.io/myzmbg/index.html">README</a> for details.</p>
+<p>詳細は<a href="https://reirisono.github.io/myzmbg/index.html">README</a>をご参照ください。日本語と英語があります。Please refer to <a href="https://reirisono.github.io/myzmbg/index.html">README</a> for details. Available in Japanese and English.</p>
 <p>端的に：パラメータを入力。気に入った画像が出るまで "submit" ボタンを押して右クリDL. 各自白枠内を切り抜いてもろて。</p>
 <p>In short: Set parameters. Keep clicking "submit" until you get what you like. Right-click to download. Crop inside the white border locally.</p>
-<h2>大きさ / Sizes & Scales</h2>
+<h2>大きさ / Sizes & scales</h2>
 <label for="scale">スケール (テストでは0.25, DL用には1を推奨)<br>Scale (recommended 0.25 for test & 1 for download):</label>
 <input type="text" id="scale" value="0.25" /><br/>
 <label for="crop_wu">キャンバス横幅（ピクセル）/ Canvas width (pixels):</label>
@@ -59,7 +63,13 @@ input[type='text']{
 <label for="triangle_hu">三角形縦幅（ピクセル）/ Triangle height (pixels):</label>
 <input type="text" id="triangle_hu" value="120" /><br/>
 
-<h2>三角形の色の混ざり具合 / Triangle color mix</h2>
+<h2>三角形の色 / Triangle colors</h2>
+<label for="color_above">上側の色 / color above (RGBA 0-255,0-255,0-255,0-1)</label>
+<input type="text" class="long" id="color_above" value="65,125,112,0.1" /><br/>
+<label for="color_below">下側の色 / color below (RGBA 0-255,0-255,0-255,0-1)</label>
+<input type="text" class="long" id="color_below" value="0,80,131,0.8" /><br/>
+<label for="color_noise">ノイズ色 / noise color (RGB 0-255,0-255,0-255)</label>
+<input type="text" class="long" id="color_noise" value="65,175,112" /><br/>
 <label for="maxmixratio">ノイズ色の最大混入率（0-1; 大きいほどノイズ色が目立つ）<br>Noise color max mix ratio (0-1; larger=see more of mix color):</label>
 <input type="text" id="maxmixratio" value="0.25" /><br/>
 
@@ -78,10 +88,22 @@ input[type='text']{
 <input type="text" id="logo_r_prop" value="0.8" /><br/>
 <label for="logo_alpha">不透明度 (0-1; 0=見えない, 1=フル原色)<br>transparency (0-1; 0=invisible, 1=bright)</label>
 <input type="text" id="logo_alpha" value="0.3" /><br/>
-<h2>乱数出力キープ /<br>Keeping the current random output</h2>
-チェックでキープ / check to keep <input type="checkbox" id="colormix_keep_yn" value="1" />
-<input type="hidden" id="colormix_old"><br/>
-<br/>
+
+<h2>背景数字 / background numbers</h2>
+<label for="color_letters">数字の色 / color of numbers (RGB 0-255,0-255,0-255):</label>
+<input type="text" class="long" id="color_letters" value="239,255,61" /><br/>
+
+<h2>乱数固定 / Keeping the current random output</h2>
+該当パーツをチェックしてから"submit"を押すと今の出力が次に引き継がれます。<br/>
+Check before hitting "submit" to keep the outputs of corresponding parts.<br/>
+<label for="tri_colormix_keep_yn">三角形 / triangles:</label>
+<input type="checkbox" id="tri_colormix_keep_yn" value="1" />
+<input type="hidden" id="tri_colormix_old"><br/>
+<label for="letter_loc_keep_yn">数字マトリックス / the number matrix:</label>
+<input type="checkbox" id="letter_loc_keep_yn" value="1" />
+<input type="hidden" id="nummatr_old"/>
+<input type="hidden" id="cluster_locs_old"/>
+<br/><br/>
 <input type="button" id="submit" value="submit" onclick="main()" />
 <!--<a href="#" class="button" id="btn-download" download="myzmbg.png">Download</a>-->
 <h2>Debug area</h2>
