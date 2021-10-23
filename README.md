@@ -1,4 +1,5 @@
 # myzmbg
+アプリ / the app: <a href="https://reirisono.github.io/myzmbg/myzmbg.html">https://reirisono.github.io/myzmbg/myzmbg.html</a>
 日本語と英語の説明あり。Available in Japanese and English.
 
 <h1>日本語</h1>
