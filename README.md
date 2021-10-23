@@ -31,10 +31,12 @@ JavaScriptをオンにした状態で myzmbg.html をWebブラウザで表示す
   <li>直径：画像幅の比率：0-1の範囲内で、円の直径が画像幅に占める比率を決めます。スマホ壁紙など縦長画像の場合は1に近い数値を、パソコン壁紙など横長画像の場合は半分以下を推奨。</li>
   <li>不透明度：0-1の範囲内で、0=見えない, 1=フル原色。</li>
 </ul>
+<h3>乱数出力キープ</h3>
+チェックボックスをチェックしてから"submit"ボタンを押すと、現在の乱数出力が次の出力に引き継がれます。
+ただし、三角形の位置と数が全く同じ場合に限ります。現在対応しているのは灰ロゴの変更のみで、他の変数をいじるとチェックボックスをチェックしていても乱数出力はキープされず新しく生成されます。
 <h2>改善点</h2>
 <ul>
-  <li>残念ながら今の状態では全く同じ乱数の結果をキープしつつ画像そのものやパーツの大きさ・位置・色だけ変えるといったことはできませんが、そのうちできるようにしたいと考えています。</li>
-  <li>元ネタの配信では背景に金色の文字(?)が左から右へと流れますが、これも技術的にちょっとむずいので実装まで時間がかかるかもしれません。</li>
+<li>元ネタの配信では背景に金色の文字(?)が左から右へと流れますが、これも技術的にちょっとむずいので実装まで時間がかかるかもしれません。</li>
 </ul>
 
 <h1>English</h1>
@@ -67,8 +69,9 @@ The input form on the left allows adjustment of image size and the locations / s
   <li>diameter-to-width proportion: in a 0-1 range, it determines the portion of the image width occupied by the diameter of the circle. A value near 1 is recommended for a long/thin image e.g. for your smart phone; a value below 0.5 is recommended for a short/wide image e.g. for your laptop or desktop.</li>
   <li>transparency: in a 0-1 range, 0=invisible; 1=full brightness.</li>
 </ul>
+<h3>Keeping the current random output</h3>
+Check the checkbox before hitting the "submit" button to keep the current random output to the next output. However, this is limited to when the exact same number of triangles are placed in the exact same positions. Currently, this works only for tweaking the logo. Changing any other variable will lead to new generation of random numbers regardless of the checkbox status.
 <h2>Issues</h2>
 <ul>
-  <li>Unfortunately, the current version does not allow changing the sizes, locations, and colors of the image itself or its parts while keeping the same result of random number generation, but I am considering to implement it in the near future.</li>
   <li>The original broadcasts have golden letters(?) flowing from left to right, but this is a bit technically challenging, so it may take some time to implement.</li>
 </ul>
