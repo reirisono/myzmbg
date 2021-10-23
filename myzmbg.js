@@ -118,13 +118,13 @@ class IsosTiles {
 		w,h,a,
 		basecolor_grad,noisecolors,maxmixratio
 	){
-	/*
-	(os_x, os_y) = offset x & y on which to plant the top-left-most (x,y) of IsoscelesTriangle()
-	(w,h) = width, height - defn is the same as in IsoscelesTriangle
-	(NOT NOW: a = angle of tilt, in degrees)
-	basecolor = the overall theme color, in [225,225,225] style. Will be concatenated into a comma-separated text after calculation.
-	noisecolors = an array of 3-member integer array colors in whose direction each triangle will randomly deviate away from basecolor in a Gaussian distribution.
-	*/
+		/*
+		(os_x, os_y) = offset x & y on which to plant the top-left-most (x,y) of IsoscelesTriangle()
+		(w,h) = width, height - defn is the same as in IsoscelesTriangle
+		(NOT NOW: a = angle of tilt, in degrees)
+		basecolor = the overall theme color, in [225,225,225] style. Will be concatenated into a comma-separated text after calculation.
+		noisecolors = an array of 3-member integer array colors in whose direction each triangle will randomly deviate away from basecolor in a Gaussian distribution.
+		*/
 		this.w = w;
 		this.h = h;
 		this.a = a;
@@ -141,6 +141,7 @@ class IsosTiles {
 		
 		this.xyn = new Array(this.line_oss.length);
 		this.coords = [];//an array of array of arrays
+		this.colormix_at_coords = [];//an array of array of arrays, first 2 dims same as this.coords, 3rd dim containing color_mix(...) outputs. Meant to allow recovery of randomly generated colors and transparencies.	
 		for(let i=0; i<this.line_oss.length; i++){
 			//debug.innerHTML += "<br>seed coordinate: "+this.line_oss[i][0]+","+this.line_oss[i][1];
 			this.xyn[i] = origins_spanning_crosses(
@@ -151,10 +152,56 @@ class IsosTiles {
 			);
 			//debug.innerHTML += "<br>origin & #: "+this.xyn[i];
 			this.coords[i] = expand_coords(this.xyn[i], this.w, this.a);
-			///debug.innerHTML += "<br>generated coords: "+this.coords[i];
-		}		
+			//debug.innerHTML += "<br>generated coords: "+this.coords[i];
+			this.colormix_at_coords[i] = Array(this.coords[i].length);
+		}
+		//debug.innerHTML += "<br>at generation, colormix_at_coords has "+this.colormix_at_coords.length+" rows.";
+	}
+	stringify_colormix = () =>{
+		document.getElementById("colormix_old").value = "";
+		for(let i=0; i<this.colormix_at_coords.length; i++){
+			document.getElementById("colormix_old").value += "ROW "+i+" ";
+			for(let j=0; j<this.colormix_at_coords[i].length; j++){
+				for(let k=0; k<this.colormix_at_coords[i][j].length; k++){
+					document.getElementById("colormix_old").value += 
+						"("+i+","+j+","+k+"):"
+						+"proportion="+this.colormix_at_coords[i][j][k].proportion
+						+";mixratio_norm="+this.colormix_at_coords[i][j][k].mixratio_norm
+						+";color="+this.colormix_at_coords[i][j][k].color
+						+"|";
+				}
+			}
+		}
+	}
+	copy_old_colormix = (colormix_old_string) =>{
+		///de-stringify and copy old colormix if the first 2 dimensions of colormix_old is the same as those of this.colormix_at_coords. Do nothing if different.
+		let colormix_old = destringify_colormix(colormix_old_string);
+		/*
+		debug.innerHTML += "<br>in old colormix,";
+		for(let i=0; i<colormix_old.length; i++){
+			debug.innerHTML += "<br> row i="+i+" has "+colormix_old[i].length+" columns";
+		}
+		debug.innerHTML += "<br>in new colormix,";
+		for(let i=0; i<this.colormix_at_coords.length; i++){
+			debug.innerHTML += "<br> row i="+i+" has "+this.colormix_at_coords[i].length+" columns";
+		}
+		*/
+		///check for dimension discrepancy, then copy
+		if(colormix_old.length != this.colormix_at_coords.length){
+			//debug.innerHTML += "<br>colormix #rows mismatch: old "+colormix_old.length+", new "+this.colormix_at_coords.length;
+			return;
+		}
+		for(let i=0; i<this.colormix_at_coords.length; i++){
+			if(colormix_old[i].length != this.colormix_at_coords[i].length){
+				//debug.innerHTML += "<br>colormix #cols mismatch: old "+colormix_old[i].length+", new "+this.colormix_at_coords[i].length;
+				return;
+			}
+		}
+		//debug.innerHTML += "<br>passing old colormix to new tiles";
+		this.colormix_at_coords = colormix_old;
 	}
 	draw = () =>{
+		//debug.innerHTML += "<br> current nrows #i = "+this.coords.length;
 		for(let i=0; i<this.coords.length; i++){
 			for(let j=0; j<this.coords[i].length; j++){
 				//NOT TO SELF: omitting "let" breaks the program
@@ -166,34 +213,66 @@ class IsosTiles {
 				
 				let basecolor = color_on_grad(x, y, triangle_w, triangle_h, crop_w, crop_h, this.a+90, this.basecolor_grad);
 				
+				if(typeof this.colormix_at_coords[i][j] === "undefined"){//if not previously assigned
+					this.colormix_at_coords[i][j] = Array(2);
+				}
+				//debug.innerHTML += "<br>at i,j = "+i+","+j;
+				//debug.innerHTML += "<br>new array element of this.colormix_at_coords has content "+this.colormix_at_coords[i][j][0];
 
-				//draw an upward-facing triangle
-				let color = color_mix(basecolor,this.noisecolors,this.maxmixratio);
-				//add the alpha dimension to the color
-				let alpha = Math.atan((xy_pos_prop - transpcap_prop)*alpha_atan_compress + (Math.random()-0.5)*alpha_rand_range)/Math.PI+0.5;
-				color.push(alpha);
-				//debug.innerHTML += "<br>transparency "+Math.round(alpha*100)/100;
+				let colormix_obj = {};
+				let alpha = 0;
 
-				let tri = new IsoscelesTriangle(x,y,this.w,this.h,this.a,color.join());//"8,103,118"
+				//determine color & alpha for an upward-facing triangle
+				if(typeof this.colormix_at_coords[i][j][0] === "undefined"){
+					colormix_obj = color_mix(basecolor,this.noisecolors,this.maxmixratio);
+					//let color = colormix_obj.color;
+					//add the alpha dimension to the color
+					alpha = Math.atan((xy_pos_prop - transpcap_prop)*alpha_atan_compress + (Math.random()-0.5)*alpha_rand_range)/Math.PI+0.5;
+					colormix_obj.color.push(alpha);
+					//debug.innerHTML += "<br>transparency "+Math.round(alpha*100)/100;
+				}
+				else{
+					//debug.innerHTML += "<br>inheriting colormix on upward-facing tr"
+					colormix_obj = color_mix(
+						basecolor,this.noisecolors,this.maxmixratio,
+						this.colormix_at_coords[i][j][0].proportion,
+						this.colormix_at_coords[i][j][0].mixratio_norm
+					);
+					colormix_obj.color.push(this.colormix_at_coords[i][j][0].color[3]); 
+				}
+				this.colormix_at_coords[i][j][0]=colormix_obj;
+				//debug.innerHTML += "<br>colormix color of upward tri is "+this.colormix_at_coords[i][j][0].color;
+				//draw the upward-facing triangle
+				let tri = new IsoscelesTriangle(x,y,this.w,this.h,this.a,colormix_obj.color.join());//"8,103,118"
 				tri.draw();
 
-				//draw a downward-facing triangle
+				//determine color & alpha for a downward-facing triangle
 				//debug.innerHTML += "<br>"+basecolor;
-				color = color_mix(basecolor,this.noisecolors,this.maxmixratio);
-				alpha = Math.atan((xy_pos_prop - transpcap_prop)*alpha_atan_compress + (Math.random()-0.5)*alpha_rand_range)/Math.PI+0.5;
-				color.push(alpha);				
-				//debug.innerHTML += "<br>transparency "+Math.round(alpha*100)/100;
-				tri = new IsoscelesTriangle(x,y,this.w,this.h,this.a+180,color.join());
+				if(typeof this.colormix_at_coords[i][j][1] === "undefined"){
+					colormix_obj = color_mix(basecolor,this.noisecolors,this.maxmixratio);
+					//color = colormix_obj.color
+					alpha = Math.atan((xy_pos_prop - transpcap_prop)*alpha_atan_compress + (Math.random()-0.5)*alpha_rand_range)/Math.PI+0.5;
+					colormix_obj.color.push(alpha);
+					//debug.innerHTML += "<br>transparency "+Math.round(alpha*100)/100;
+				}
+				else{
+					//debug.innerHTML += "<br>inheriting colormix on downward-facing tr"
+					colormix_obj = color_mix(
+						basecolor,this.noisecolors,this.maxmixratio,
+						this.colormix_at_coords[i][j][1].proportion,
+						this.colormix_at_coords[i][j][1].mixratio_norm
+					);
+					colormix_obj.color.push(this.colormix_at_coords[i][j][1].color[3]); 
+				}
+				this.colormix_at_coords[i][j][1]=colormix_obj;
+				//debug.innerHTML += "<br>colormix color of downward tri is "+this.colormix_at_coords[i][j][1].color;
+				//draw the downward-facing triangle
+				tri = new IsoscelesTriangle(x,y,this.w,this.h,this.a+180,colormix_obj.color.join());
 				tri.draw();
-
-				//debug purpose only
-				/*let circ = new Circle(
-					x, y,
-					5, 'rgb(100,100,100)');
-				circ.draw();*/
-				//c.save();
+				
 			}
 		}
+		this.stringify_colormix();
 	}
 }
 
@@ -335,6 +414,55 @@ function expand_coords(xyn,w,a){
 	return coords;
 }
 
+function destringify_colormix(colormix_string){
+	let varnames = ["proportion","mixratio_norm","color"];
+	let colormix = new Array();
+	let rows = colormix_string.split("ROW ").slice(1);
+	//let coord_ary = colormix_string.split("\n");
+	let coord_ary = '', coord_and_payload='', ijk='', kv='', value='', c={};
+	for(let i=0; i<rows.length; i++){
+		colormix.push(new Array());
+		//debug.innerHTML += "<br>entering row "+i;
+		coord_ary = rows[i].split(" ");
+		coord_ary = coord_ary[1].split("|");//discarding the leading text "ROW \d+ "
+		//debug.innerHTML += "<br>"+coord_ary;
+		for(let j=0; j<coord_ary.length-1; j++){
+			//debug.innerHTML += "<br>original string "+coord_ary[j];
+			coord_and_payload = coord_ary[j].split(':');
+			ijk = coord_and_payload[0].substr(1,coord_and_payload[0].length-2).split(',');
+			//debug.innerHTML += "<br>coordinate "+ijk+" has ";
+			c={};
+			for(let v=0; v<varnames.length; v++){
+				//debug.innerHTML += varnames[v];
+				kv = coord_and_payload[1].match(RegExp(varnames[v]+"=[\\d\\.\\,]+","g"));
+				value = kv[0].substr(varnames[v].length+1,kv[0].length-1);
+				//debug.innerHTML += " "+value+" ";
+				
+				if(varnames[v]=="proportion" || varnames[v]=="mixratio_norm"){
+					c[varnames[v]]=parseFloat(value);
+				}
+				else{
+					value = value.split(",");
+					for(let w=0; w<value.length; w++){
+						value[w]=parseFloat(value[w]);
+					}
+					c[varnames[v]]=value;
+				}
+				//debug.innerHTML += varnames[v] + " = " + c[varnames[v]];
+				
+			}
+			if(ijk[1] > colormix[i].length-1){
+				for(let x=colormix[i].length; x<=ijk[1]; x++){
+					colormix[i].push(new Array());
+				}
+			}
+			colormix[i][ijk[1]].push(c);
+			//debug.innerHTML += "<br>pushed to "+ijk[0]+","+ijk[1];
+		}
+	}
+	return colormix;
+}
+
 class BarGraph {
 	/*draws a vertical, upward oriented bar graph*/
 	constructor(orig_x, orig_y, bar_w, bar_s, h_array, fillStyle, alpha){
@@ -402,33 +530,40 @@ function color_on_grad(x, y, min_x, min_y, w, h, a, basecolor_grad){
 	return color;
 }
 
-function color_mix(basecolor,mixcolors,maxmixratio){
-	proportion = new Array(mixcolors.length);
+function color_mix(basecolor,mixcolors,maxmixratio, proportion=undefined, mixratio_norm=undefined){
+	let sumprop = 0;
+	if(typeof proportion === "undefined" || proportion.length != mixcolors.length){
+		proportion = new Array(mixcolors.length);
+		for(let i=0;i<mixcolors.length;i++){
+			proportion[i] = Math.random();
+			sumprop = sumprop + proportion[i];
+		}
+		for(let i=0;i<mixcolors.length;i++){
+			proportion[i] = proportion[i]/sumprop;
+		}
+		//debug.innerHTML += "<br> proportion is "+proportion;
+	}
 	sumprop = 0;
-	for(let i=0;i<mixcolors.length;i++){
-		proportion[i] = Math.random();
-		sumprop = sumprop + proportion[i];
+	if(typeof mixratio_norm === "undefined"){
+		mixratio_norm = Math.random();
 	}
-	for(let i=0;i<mixcolors.length;i++){
-		proportion[i] = proportion[i]/sumprop;
-	}
-	//debug.innerHTML += "<br>"+proportion;
-	mixratio = Math.random() * maxmixratio;
+	mixratio = mixratio_norm * maxmixratio;
 	//debug.innerHTML += "<br>mixratio: "+mixratio;
-	finalcolor = [0,0,0];
+	color = [0,0,0];
 	for(let c=0; c<=2; c++){
-		finalcolor[c] = basecolor[c]*(1-mixratio);
-		//debug.innerHTML += "<br>"+c+"-th dimension: starts "+finalcolor[c];
+		color[c] = basecolor[c]*(1-mixratio);
+		//debug.innerHTML += "<br>"+c+"-th dimension: starts "+color[c];
 		for(let i=0;i<mixcolors.length;i++){
 			//debug.innerHTML += "<br>adding "+mixcolors[i][c]+" * "+mixratio+" * "+proportion[i]+" = "+(mixcolors[i][c] * mixratio * proportion[i]);
-			finalcolor[c] = finalcolor[c] + mixcolors[i][c] * mixratio * proportion[i];
-			//debug.innerHTML += "<br>"+finalcolor[c];
+			color[c] = color[c] + mixcolors[i][c] * mixratio * proportion[i];
+			//debug.innerHTML += "<br>"+color[c];
 		}
-		finalcolor[c] = Math.round(finalcolor[c]);
-		//debug.innerHTML += "<br>rounded: "+finalcolor[c];
+		color[c] = Math.round(color[c]);
+		//debug.innerHTML += "<br>rounded: "+color[c];
 	}
-	//debug.innerHTML += "<br>rounded: "+finalcolor;
-	return finalcolor;
+	//debug.innerHTML += "<br>rounded: "+color;
+	//return color;
+	return {proportion, mixratio_norm, color};
 }
 
 /************************* EXECUTE *************************/
@@ -459,6 +594,10 @@ function main() {
 	logo_y_prop = parseFloat(document.getElementById("logo_y_prop").value);
 	logo_r_prop = parseFloat(document.getElementById("logo_r_prop").value);
 	logo_alpha = parseFloat(document.getElementById("logo_alpha").value);
+	
+	///old state
+	colormix_keep = (document.getElementById("colormix_keep_yn").checked)?true:false;
+	colormix_old_string = document.getElementById("colormix_old").value;
 	
 	setScale();
 	debug.innerHTML = 'width '+cvs.width+', height '+cvs.height;
@@ -528,8 +667,12 @@ function main() {
 	tiles = new IsosTiles(
 		11,22,
 		triangle_w,triangle_h,0,
-		[[31,143,156,0.1],[0,80,131,0.8]], [[65,175,112]], maxmixratio
-	);//noisecolor: [65,175,112] pale green;[207,105,244],[255,0,0]
+		[[65,125,112,0.1],[0,80,131,0.8]], [[65,175,112]], maxmixratio
+	);//noisecolor: [65,175,112] pale green;[207,105,244],[255,0,0]; second basecolor_grad[0,80,131,0.8]
+	if(colormix_keep){
+		//use old tiles inheriting the colors and transparencies
+		tiles.copy_old_colormix(colormix_old_string);
+	}
 	tiles.draw();
 
 	/****** draw the bar graph ******/
