@@ -8,6 +8,9 @@ JavaScriptをオンにした状態で myzmbg.html をWebブラウザで表示す
 "submit" ボタンを何度も押して気に入ったのが出るまで試してみてください。<br>
 左の入力フォームから画像サイズやパーツの位置・サイズも一部調整できます。<br>
 <h2>入力フォーム仕様</h2>
+<h3>描画スイッチ</h3>
+<p>クリックで背景のハイライトが右に流れたり止まったりを切り替えられます。白丸が左にある時は停止し、右にある時は動きます。</p>
+<p style="color:red">ご注意：デフォルトより大きいサイズだととても重くなります！自己責任でどうぞ。</p>
 <h3>大きさ</h3>
 <ul>
   <li>スケール: HTML Canvas画像をブラウザ上でリアルサイズで表示するか、見やすいようにピクセル数を減らして表示するかの違いです。テストでは0.25, DL用には1を推奨。</li>
@@ -44,7 +47,8 @@ JavaScriptをオンにした状態で myzmbg.html をWebブラウザで表示す
 現在、三角形のノイズ色混入率と透明度、そして背景数字の光り方が独立に固定できます。
 <h2>改善点</h2>
 <ul>
-<li>元ネタの配信の一部では背景の数字マトリックスの光が左から右へと流れますが、これも技術的にちょっとむずいので実装まで時間がかかるかもしれません。少なくともハロウィン2021にまでは実装する予定はありませんので悪しからず。</li>
+<li>背景の数字マトリックスの光を動かすことに成功しましたが、重さを何とかしたいです。いつ治るかは不明です。</li>
+<li>絵の一部を動かす方法が分かったので、マイクに反応して音声成分のヒストグラムを動かすことも視野に入れております。</li>
 </ul>
 
 <h1>English</h1>
@@ -53,6 +57,9 @@ Open myzmbg.html on your web browser with JavaScript turned on to generate an im
 Click the "submit" button as many times as you like until you see what you like.<br>
 The input form on the left allows adjustment of image size and the locations / sizes of some image elements.<br>
 <h2>Input form specs</h2>
+<h3>Animation switch</h3>
+<p>Click to toggle the rightward flow of the background highlights. It stops when the white circle is at the left; moves when it's on the right.</p>
+<p style="color:red">Attention: it gets slow when the image is larger than its default size!</p> 
 <h3>Sizes & scales</h3>
 <ul>
   <li>Scale: whether to show the same size of HTML Canvas image object in its real size or shrunken with fewer pixel size for the ease of view. Recommends 0.25 to test and 1 for download.</li>
@@ -89,5 +96,6 @@ However, this is limited to when the exact same number of parts are placed in th
 The app currently allows independent fixation of the noise color/transparency of the triangles and the  highlights of the number matrix.
 <h2>Issues</h2>
 <ul>
-<li>Some of the original broadcasts have the highlights of the number matrix flowing from left to right, but this is a bit technically challenging, so it may take some time to implement. At least I won't make it to Halloween 2021. Sorry :(</li>
+<li>The highlights of the number matrix successfully flows from left to right, but it needs to be lighter. I have no clue when this can be achieved :P</li>
+<li>Now that I know how to animate parts of the canvas, I am considering to mobilize the vocal histogram in response to mic input.</li>
 </ul>

@@ -7,8 +7,8 @@ const cvs = document.querySelector('canvas');
 const c = cvs.getContext('2d');
 debug = document.getElementById("debug");//points to <p> element on HTML created for debug outputs
 
-/****** dynamic parameters ******/
-//user-set parameters (The values set here are for display only b/c they will be immediately overwritten by the default or user-entered values from HTML.)
+/****** global static and dynamic parameters ******/
+//user-set parameters are for display only b/c they will be immediately overwritten by the default or user-entered values from HTML. The key here is to make them global variables.
 ///frame and triangle scale
 scale = 0.25;
 crop_wu = 1080;
@@ -37,6 +37,14 @@ logo_y_prop = 0.25;
 logo_r_prop = 0.8;
 logo_alpha = 0.3;
 
+///number matrix parameters
+color_letters="239,255,61";
+line_ht = 36*scale;
+n_lines = 0;
+n_letters =0;
+nummatr = null;
+cluster_locs = null;
+
 //calculated parameters - initially set to nonsense value, then setScale() executed within main()
 crop_w = 0;
 crop_h = 0;
@@ -44,6 +52,16 @@ triangle_h = 0;
 triangle_w = 0;
 cvs.width = 0;
 cvs.height = 0;
+
+//objects - initialized in initialize(), then updated in animate()
+tiles = null;
+bargraph = null;
+
+/*function toggle_modetext(){
+	modetext = document.getElementById('modetext'); 
+	modetext.innerHTML = (modeCx.checked)?"play":"stop";
+	modetext.style.color = (modeCx.checked)?"#2196F3":"#999";
+}*/
 
 function setScale(){
 	crop_w = crop_wu*scale;
@@ -62,6 +80,7 @@ class Circle{//borrowed from canvas.js for test purpose only
 		this.fillStyle=fillStyle;
 	}
 	draw = () => {
+		c.save();
 	    c.fillStyle = this.fillStyle;
 	    c.beginPath();
 		c.arc(this.x, this.y,
@@ -106,6 +125,7 @@ class IsoscelesTriangle {
 		*/
 	}
 	draw = () =>{
+		c.save();
 	    c.fillStyle = this.fc;
 		c.beginPath();
 		c.moveTo(this.x_1,this.y_1);
@@ -557,15 +577,162 @@ function make_cluster(seed_loc,cluster_size,n_rows,n_cols){
 	}
 	return cluster_locs;
 }
+function get_new_nummatr_and_clusters(){
+	n_letters = Math.ceil(cvs.width / 5.4 / 2);
+	n_lines = Math.ceil(cvs.height / line_ht);
+	//debug.innerHTML += "<br>n_letters = "+n_letters+", n_lines = "+n_lines;
+	n_tot = n_letters * n_lines;
+	seed_ratio = 0.05;//proportion of shining letter seeds to total # of letters
+	max_cluster_size = 7;
+	nummatr = [];
+	cluster_locs = [];
+	if(letter_loc_keep & nummatr_old_string != ""){
+		nummatr_old = JSON.parse(nummatr_old_string);
+		cluster_locs_old = JSON.parse(cluster_locs_old_string); 
+		if(nummatr_old.length == n_lines && nummatr_old[0].length == n_letters){
+			nummatr = nummatr_old;
+			cluster_locs = cluster_locs_old;
+		}
+	}
+	else{
+		for(let l=0; l<n_lines; l++){
+			nummatr.push(Array(n_letters).fill().map(() => Math.floor(Math.random() * 10)));
+		}
+		seed_locs = Array(Math.floor(n_tot * seed_ratio)).fill().map(() => Math.floor(Math.random() * n_tot));
+		cluster_sizes = Array(seed_locs.length).fill().map(() => Math.floor(Math.pow(Math.random(),3)*max_cluster_size)+1);
+		//debug.innerHTML += "<br>"+cluster_sizes;
+		for(let s=0; s<seed_locs.length; s++){
+			row = Math.floor(seed_locs[s]/n_letters);
+			col = seed_locs[s]%n_letters;
+			//debug.innerHTML += "<br>row,col = "+row+","+col;
+			cluster_locs.push(make_cluster([row,col],cluster_sizes[s],n_lines,n_letters));
+			//debug.innerHTML += "<br>cluster locs = "+cluster_locs[s];
+		}
+	}
+	return [nummatr,cluster_locs];
+}
+function update_nummatr(){
+	///cycle each number by adding 1 or if 9 go back to 0
+	for(let r=0; r<nummatr.length; r++){
+		for(let c=0; c<nummatr[r].length; c++){
+			nummatr[r][c] = (nummatr[r][c]+1)%10;
+		}
+	}
+	///move the highlights to the right with some non-random jittering. Jittering needs to be non-random for it to loop with a finite # of frames.
+	/*
+	Strategy:
+	- a loop is the least common multiple between 10 (for the loop of number grid from 0 to 9) and the # of columns...or to simplify, multiply the # cols by 10
+	-- because the number grid must return to its original config (must be a multiple of 10)...
+	-- ...and the rightward-moving shiny clusters must return to their original configs (must be a multiple of the # columns)
+	- Every cluster has a life expectancy < loop length and completes at least 1 life cycle during a loop. 
+	- clusters start their lives with size = 1, increases in size over time, then decreases back to 0.
+	- okay not to end exactly where it started
+	The average # of clusters visible at any frame is A such that
+	- N = total # clusters
+	- P = one loop period (= # frames)
+	- L = cluster's avg life expectancy
+	A = (sum of L across clusters)/P = L * N / P
+	L*N = total "person-hours" = A*P, L <= P. So, N > A.
+	- Let user decide A. P is calculated from width. Let L = 10 from observation. Calculate N.
+	- During get_new_nummatr_and_clusters(), define N (not A) seeds at random locations.
+	- These seeds will "bud" with cluster size=1 when its location has the number 0.
+	- On the next frame, they wil move:
+		- one column to the right
+		- grow or contract by 1 such that its cluster size is 1->2->3->4->5->5->4->3->2->1
+			- the relative position of its new cluster member or deleted member is decided by the #s surrounding it. Largest number takes it; if multiple equals exist, preference goes to front (right) > top > bottom > back (left)
 
+	*/
+	for(let s=0; s<cluster_locs.length; s++){
+		for(let n=0; n<cluster_locs[s].length; n++){
+			cluster_locs[s][n][1]= (cluster_locs[s][n][1]+1)%n_letters; 
+		}
+	}
+	return;
+}
+/************************* DRAWING FUNCTIONS *************************/
+function draw_bg(){
+	c.save();
+	c.fillStyle="#000000";
+	c.fillRect(0,0,cvs.width,cvs.height);
+	c.restore();
+}
+function draw_logo(){
+	logo_orig_x = cvs.width/2;
+	logo_orig_y = triangle_h+crop_h*logo_y_prop;
+	logo_r = crop_w/2*logo_r_prop;
+	c.save();
+	c.strokeStyle = "#199cae";
+	c.lineWidth = logo_r/12;
+	c.globalAlpha = logo_alpha;
+	c.beginPath();
+	///the outer circle
+	c.arc(logo_orig_x, logo_orig_y, logo_r, 0, 2*Math.PI);
+	///the "trunk"
+	c.moveTo(logo_orig_x, logo_orig_y - logo_r/3);
+	c.lineTo(logo_orig_x, logo_orig_y + logo_r/3);
+	///the "upper extremities" and "ceiling"
+	ue_offset = (1+2*Math.sqrt(71/4))/12*logo_r;
+	c.moveTo(logo_orig_x, logo_orig_y + logo_r/6);
+	c.lineTo(logo_orig_x - ue_offset, logo_orig_y + logo_r/6 - ue_offset);
+	c.closePath();
+	c.moveTo(logo_orig_x, logo_orig_y + logo_r/6);
+	c.lineTo(logo_orig_x + ue_offset, logo_orig_y + logo_r/6 - ue_offset);
+	///the "lower extremities"
+	le_offset = (-1+Math.sqrt(17))/6*logo_r;
+	c.moveTo(logo_orig_x, logo_orig_y + logo_r/3);
+	c.lineTo(logo_orig_x - le_offset, logo_orig_y + logo_r/3 + le_offset);
+	c.moveTo(logo_orig_x, logo_orig_y + logo_r/3);
+	c.lineTo(logo_orig_x + le_offset, logo_orig_y + logo_r/3 + le_offset);
+	///the "ceiling" - note that trying to complete a triangle with the "upper extremities" will create and unwieldly acute angle accentuation.
+	c.moveTo(logo_orig_x - ue_offset, logo_orig_y + logo_r/6 - ue_offset);
+	c.lineTo(logo_orig_x + ue_offset, logo_orig_y + logo_r/6 - ue_offset);
+	///the "wall"
+	c.moveTo(logo_orig_x - ue_offset, logo_orig_y + logo_r/6 - ue_offset);
+	c.lineTo(logo_orig_x - ue_offset, logo_orig_y - logo_r/6 + ue_offset);
+	c.closePath();
+	c.stroke();
+	c.restore();
+}
+function draw_nummatr(nummatr,cluster_locs){
+	n_lines = nummatr.length;
+	n_letters = nummatr[0].length;
+	//debug.innerHTML += "<br>n_lines, n_letters: "+n_lines+","+n_letters;
+	c.save();
+	c.font = (36*scale)+"px Courier New";
+	c.textAlign = "left";
+	c.fillStyle="#FFFFFF";
+	c.globalAlpha=0.2;
+	//let nums = "";
+	for(let l=0; l<n_lines; l++){
+		nums = nummatr[l].join(" ");
+		c.fillText(nums,0,line_ht*(l+1));
+	}
+	///display shining number clusters
+	c.strokeStyle="rgb("+color_letters+")";
+	c.globalAlpha=0.5;
+	c.lineWidth = 20*scale;
+	c.filter = "blur("+10*scale+"px)";
+
+	for(var s=0; s<cluster_locs.length; s++){
+		for(var n=0; n<cluster_locs[s].length; n++){
+			if(cluster_locs[s][n][0]<0 || cluster_locs[s][n][0]>=n_lines
+				|| cluster_locs[s][n][1]<0 || cluster_locs[s][n][1]>=n_letters){continue;}
+			letter = nummatr[cluster_locs[s][n][0]][cluster_locs[s][n][1]];
+			///make an array filled with space character followed by the character to shine
+			string = " ".repeat(cluster_locs[s][n][1]*2) + letter;
+			//debug.innerHTML += "<br>"+string;
+			c.strokeText(string,0,line_ht*(cluster_locs[s][n][0]+1));
+		}
+	}
+	c.restore();
+}
+function draw_cropbox(){
+	c.strokeStyle="#FFFFFF";
+	c.strokeRect(triangle_w, triangle_h, crop_w, crop_h);
+}
 /************************* EXECUTE *************************/
-/****** dynamic elements (altered by user inputs) ******/
-function main() {
-	//requestAnimationFrame(animate);//comment it out to prevent redrawing every split second
-	//bRect = cvs.getBoundingClientRect();
-
-	debug.innerHTML += "<br>start executing";
-
+/****** "static" elements (generated only once) ******/
+function initialize(){
 	//get user-set parameters
 	///frame and triangle scale
 	scale = parseFloat(document.getElementById("scale").value);
@@ -604,47 +771,10 @@ function main() {
 	debug.innerHTML = 'width '+cvs.width+', height '+cvs.height;
 
 	/****** establish background color in a way that it prints as image ******/
-	c.save();
-	c.fillStyle="#000000";
-	c.fillRect(0,0,cvs.width,cvs.height);
-	c.restore();
+	draw_bg();
 
 	/****** draw the logo ******/
-	logo_orig_x = cvs.width/2;
-	logo_orig_y = triangle_h+crop_h*logo_y_prop;
-	logo_r = crop_w/2*logo_r_prop;
-	c.save();
-	c.strokeStyle = "#199cae";
-	c.lineWidth = logo_r/12;
-	c.globalAlpha = logo_alpha;
-	c.beginPath();
-	///the outer circle
-	c.arc(logo_orig_x, logo_orig_y, logo_r, 0, 2*Math.PI);
-	///the "trunk"
-	c.moveTo(logo_orig_x, logo_orig_y - logo_r/3);
-	c.lineTo(logo_orig_x, logo_orig_y + logo_r/3);
-	///the "upper extremities" and "ceiling"
-	ue_offset = (1+2*Math.sqrt(71/4))/12*logo_r;
-	c.moveTo(logo_orig_x, logo_orig_y + logo_r/6);
-	c.lineTo(logo_orig_x - ue_offset, logo_orig_y + logo_r/6 - ue_offset);
-	c.closePath();
-	c.moveTo(logo_orig_x, logo_orig_y + logo_r/6);
-	c.lineTo(logo_orig_x + ue_offset, logo_orig_y + logo_r/6 - ue_offset);
-	///the "lower extremities"
-	le_offset = (-1+Math.sqrt(17))/6*logo_r;
-	c.moveTo(logo_orig_x, logo_orig_y + logo_r/3);
-	c.lineTo(logo_orig_x - le_offset, logo_orig_y + logo_r/3 + le_offset);
-	c.moveTo(logo_orig_x, logo_orig_y + logo_r/3);
-	c.lineTo(logo_orig_x + le_offset, logo_orig_y + logo_r/3 + le_offset);
-	///the "ceiling" - note that trying to complete a triangle with the "upper extremities" will create and unwieldly acute angle accentuation.
-	c.moveTo(logo_orig_x - ue_offset, logo_orig_y + logo_r/6 - ue_offset);
-	c.lineTo(logo_orig_x + ue_offset, logo_orig_y + logo_r/6 - ue_offset);
-	///the "wall"
-	c.moveTo(logo_orig_x - ue_offset, logo_orig_y + logo_r/6 - ue_offset);
-	c.lineTo(logo_orig_x - ue_offset, logo_orig_y - logo_r/6 + ue_offset);
-	c.closePath();
-	c.stroke();
-	c.restore();
+	draw_logo();
 
 	/****** debug: draw a circle ******/
 	/*circ = new Circle(
@@ -659,70 +789,17 @@ function main() {
 	*/
 	
 	/****** draw a matrix of numbers ******/
-	line_ht = 9;
-	n_letters = Math.ceil(cvs.width / 5.4 / 2);
-	n_lines = Math.ceil(cvs.height / line_ht);
-	//debug.innerHTML += "<br>n_letters = "+n_letters+", n_lines = "+n_lines;
-	n_tot = n_letters * n_lines;
-	seed_ratio = 0.05;//proportion of shining letter seeds to total # of letters
-	max_cluster_size = 7;
 
 	///prepare the number matrix and cluster locations
 	debug.innerHTML += "<br>preparing nummatr and cluster_locs";
-	nummatr = [];
-	cluster_locs = [];
-	if(letter_loc_keep & nummatr_old_string != ""){
-		nummatr_old = JSON.parse(nummatr_old_string);
-		cluster_locs_old = JSON.parse(cluster_locs_old_string); 
-		if(nummatr_old.length == n_lines && nummatr_old[0].length == n_letters){
-			nummatr = nummatr_old;
-			cluster_locs = cluster_locs_old;
-		}
-	}
-	else{
-		for(let l=0; l<n_lines; l++){
-			nummatr.push(Array(n_letters).fill().map(() => Math.floor(Math.random() * 10)));
-		}
-		seed_locs = Array(Math.floor(n_tot * seed_ratio)).fill().map(() => Math.floor(Math.random() * n_tot));
-		cluster_sizes = Array(seed_locs.length).fill().map(() => Math.floor(Math.pow(Math.random(),3)*max_cluster_size)+1);
-		//debug.innerHTML += "<br>"+cluster_sizes;
-		for(let s=0; s<seed_locs.length; s++){
-			row = Math.floor(seed_locs[s]/n_letters);
-			col = seed_locs[s]%n_letters;
-			//debug.innerHTML += "<br>row,col = "+row+","+col;
-			cluster_locs.push(make_cluster([row,col],cluster_sizes[s],n_lines,n_letters));
-			//debug.innerHTML += "<br>cluster locs = "+cluster_locs[s];
-		}
-	}
+	[nummatr,cluster_locs] = get_new_nummatr_and_clusters();
+
 	///de-stringify and pass current nummatr to cluster_locs
 	document.getElementById("nummatr_old").value = JSON.stringify(nummatr);
 	document.getElementById("cluster_locs_old").value = JSON.stringify(cluster_locs);
 	///display the number matrix
-	c.save();
-	c.font = "9px Courier New";
-	c.textAlign = "left";
-	c.fillStyle="#FFFFFF";
-	c.globalAlpha=0.2;
-	for(let l=0; l<n_lines; l++){
-		nums = nummatr[l].join(" ");
-		c.fillText(nums,0,line_ht*(l+1));
-	}
-	///display shining number clusters
-	c.fillStyle="rgb("+color_letters+")";
-	c.globalAlpha=1;
-	c.filter = "blur(2px)";
-	for(let s=0; s<cluster_locs.length; s++){
-		for(let n=0; n<cluster_locs[s].length; n++){
-			if(cluster_locs[s][n][0]<0 || cluster_locs[s][n][0]>=n_lines
-				|| cluster_locs[s][n][1]<0 || cluster_locs[s][n][1]>=n_letters){continue;}
-			letter = nummatr[cluster_locs[s][n][0]][cluster_locs[s][n][1]];
-			///make an array filled with space character followed by the character to shine
-			string = " ".repeat(cluster_locs[s][n][1]*2) + letter;
-			//debug.innerHTML += "<br>"+string;
-			c.fillText(string,0,line_ht*(cluster_locs[s][n][0]+1));
-		}
-	}
-	c.restore();
+	draw_nummatr(nummatr,cluster_locs);
+
 	/****** draw a grid of triangles ******/
 	debug.innerHTML += "<br>draw grid";
 	tiles = new IsosTiles(
@@ -747,18 +824,54 @@ function main() {
 	bargraph.draw();
 
 	/****** draw the cropping box ******/
-	c.strokeStyle="#FFFFFF";
-	c.strokeRect(triangle_w, triangle_h, crop_w, crop_h);
+	draw_cropbox();
 
-	/****** save canvas as an image ******/
-	//copied from https://weworkweplay.com/play/saving-html5-canvas-as-image/
-	/*var button = document.getElementById('btn-download');
-	button.addEventListener('click', function (e) {
-		var dataURL = canvas.toDataURL('image/png');
-		button.href = dataURL;
-	});
-	*/
 	/****** debug text output ******/
+	debug.innerHTML += "<br>it ran till the end";
+}
 
-	debug.innerHTML += "<br>it ran till the end"
+/****** dynamic elements (altered by user inputs) ******/
+animeID = 0;
+function animate() {
+
+	//debug.innerHTML += "<br>start animating";
+
+	//get user-set parameters
+	modeCx = document.getElementById('mode');
+	//debug.innerHTML += "<br>play-stop slider is checked? "+modeCx.checked;
+	animeID = requestAnimationFrame(animate);//comment it out to prevent redrawing every split second
+	//bRect = cvs.getBoundingClientRect();//apparently not needed
+	
+	///draw some unchanging elements
+	draw_bg();
+	draw_logo();
+	///update the number matrix, then draw
+	update_nummatr();
+	draw_nummatr(nummatr,cluster_locs);
+	tiles.draw();
+	bargraph.draw();
+	draw_cropbox();
+
+	
+	/****** debug: draw a circle ******/
+	/*
+	radius_jitter = Math.random()+0.5;
+	//debug.innerHTML += "<br>radius jitter "+radius_jitter;
+	circ = new Circle(
+		100, 220,
+		20*radius_jitter, 'rgb('+color_on_grad(100,220,triangle_w, triangle_h, crop_w, crop_h, 90, [[0,0,0],[255,0,0]]).join()+')');
+	//debug.innerHTML += "<br>"+circ.x+", "+circ.y;
+	circ.draw();
+	*/
+	return animeID;
+}
+function toggle_animation(){
+	modeCx = document.getElementById('mode');
+	//debug.innerHTML += "<br>play-stop slider is checked? "+modeCx.checked;
+	if(modeCx.checked){
+		animeID = animate(nummatr,cluster_locs);
+	}
+	else{
+		cancelAnimationFrame(animeID);
+	}
 }
