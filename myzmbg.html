@@ -149,6 +149,20 @@ p#modetext{
 <label for="triangle_hu">三角形縦幅（ピクセル）/ Triangle height (pixels):</label>
 <input type="text" id="triangle_hu" value="120" /><br/>
 
+<h2>灰ロゴ / The Logo</h2>
+<label for="logo_y_prop">中心点の縦位置（0-1; 小さいほど上、大きいほど下）<br>vertical location of center (0-1; small=top, large=bottom)</label>
+<input type="text" id="logo_y_prop" value="0.25" /><br/>
+<label for="logo_r_prop">直径：画像幅の比率 (0-1)<br>diameter-to-width proportion (0-1)</label>
+<input type="text" id="logo_r_prop" value="0.8" /><br/>
+<label for="logo_color">ロゴの色 / color of the logo (RGB 0-255,0-255,0-255):</label>
+<input type="text" class="long" id="logo_color" value="24,156,174" /><br/>
+<label for="logo_alpha">不透明度 (0-1; 0=見えない, 1=フル原色)<br>transparency (0-1; 0=invisible, 1=bright)</label>
+<input type="text" id="logo_alpha" value="0.3" /><br/>
+
+<h2>背景数字 / background numbers</h2>
+<label for="color_letters">数字の色 / color of numbers (RGB 0-255,0-255,0-255):</label>
+<input type="text" class="long" id="color_letters" value="239,255,61" /><br/>
+
 <h2>三角形の色 / Triangle colors</h2>
 <label for="color_above">上側の色 / color above (RGBA 0-255,0-255,0-255,0-1)</label>
 <input type="text" class="long" id="color_above" value="65,125,112,0.1" /><br/>
@@ -167,17 +181,9 @@ p#modetext{
 <label for="alpha_rand_range">不均一さ（大きいほどバラける）<br>Unevenness (large=more scattered)</label>
 <input type="text" id="alpha_rand_range" value="10" /><br/>
 
-<h2>灰ロゴ / The Logo</h2>
-<label for="logo_y_prop">中心点の縦位置（0-1; 小さいほど上、大きいほど下）<br>vertical location of center (0-1; small=top, large=bottom)</label>
-<input type="text" id="logo_y_prop" value="0.25" /><br/>
-<label for="logo_r_prop">直径：画像幅の比率 (0-1)<br>diameter-to-width proportion (0-1)</label>
-<input type="text" id="logo_r_prop" value="0.8" /><br/>
-<label for="logo_alpha">不透明度 (0-1; 0=見えない, 1=フル原色)<br>transparency (0-1; 0=invisible, 1=bright)</label>
-<input type="text" id="logo_alpha" value="0.3" /><br/>
-
-<h2>背景数字 / background numbers</h2>
-<label for="color_letters">数字の色 / color of numbers (RGB 0-255,0-255,0-255):</label>
-<input type="text" class="long" id="color_letters" value="239,255,61" /><br/>
+<h2>音声グラフ / the voice histogram</h2>
+<label for="voice_color">グラフの色 / bar color (RGB 0-255,0-255,0-255):</label>
+<input type="text" class="long" id="voice_color" value="0,200,225" /><br/>
 
 <h2>乱数固定 / Keeping the current random output</h2>
 該当パーツをチェックしてから"submit"を押すと今の出力が次に引き継がれます。<br/>

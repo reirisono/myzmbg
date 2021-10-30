@@ -35,15 +35,21 @@ alpha_rand_range = 10; //the spreading of transparentness at a given position. S
 ///logo parameters
 logo_y_prop = 0.25;
 logo_r_prop = 0.8;
+logo_color = '24,156,174';//same as '#199cae';//Halloween orange 255, 183, 0 
 logo_alpha = 0.3;
 
 ///number matrix parameters
-color_letters="239,255,61";
-line_ht = 36*scale;
+color_letters="239,255,61";//Halloween purple 140, 0, 255
+line_ht = 72*scale^1.8;
+seed_ratio = 0.02;//proportion of shining letter seeds to total # of letters
+max_cluster_size = 7;
 n_lines = 0;
 n_letters =0;
 nummatr = null;
 cluster_locs = null;
+
+///voice graph parameters
+voice_color = '0,200,225';
 
 //calculated parameters - initially set to nonsense value, then setScale() executed within main()
 crop_w = 0;
@@ -440,7 +446,7 @@ class BarGraph {
 	draw = () => {
 		c.save();
 		c.globalAlpha = this.alpha;
-	    c.fillStyle = "rgb("+this.fillStyle.join()+")";
+	    c.fillStyle = "rgb("+this.fillStyle+")";//changed from this.fillStyle.join() since no longer using an array of 3 ints
 		//debug.innerHTML += "<br>"+c.fillStyle;
 	    for(let i=0; i<this.h_array.length; i++){
 			//debug.innerHTML += "<br>"+i;
@@ -582,8 +588,6 @@ function get_new_nummatr_and_clusters(){
 	n_lines = Math.ceil(cvs.height / line_ht);
 	//debug.innerHTML += "<br>n_letters = "+n_letters+", n_lines = "+n_lines;
 	n_tot = n_letters * n_lines;
-	seed_ratio = 0.05;//proportion of shining letter seeds to total # of letters
-	max_cluster_size = 7;
 	nummatr = [];
 	cluster_locs = [];
 	if(letter_loc_keep & nummatr_old_string != ""){
@@ -661,7 +665,7 @@ function draw_logo(){
 	logo_orig_y = triangle_h+crop_h*logo_y_prop;
 	logo_r = crop_w/2*logo_r_prop;
 	c.save();
-	c.strokeStyle = "#199cae";
+	c.strokeStyle = "rgb("+logo_color+")";
 	c.lineWidth = logo_r/12;
 	c.globalAlpha = logo_alpha;
 	c.beginPath();
@@ -755,10 +759,14 @@ function initialize(){
 	///logo parameters
 	logo_y_prop = parseFloat(document.getElementById("logo_y_prop").value);
 	logo_r_prop = parseFloat(document.getElementById("logo_r_prop").value);
+	logo_color = document.getElementById("logo_color").value;
 	logo_alpha = parseFloat(document.getElementById("logo_alpha").value);
 	
 	///letter matrix parameters
 	color_letters = document.getElementById("color_letters").value;
+	
+	///voice histogram parameters
+	voice_color = document.getElementById("voice_color").value;
 	
 	///old state
 	tri_colormix_keep = (document.getElementById("tri_colormix_keep_yn").checked)?true:false;
@@ -819,7 +827,7 @@ function initialize(){
 	bargraph = new BarGraph(
 		triangle_w, crop_h+triangle_h, 120*scale,8*scale,
 		[880*scale,1024*scale,840*scale,760*scale,340*scale,160*scale,32*scale],
-		[0,200,225],0.2
+		voice_color,0.2
 	);
 	bargraph.draw();
 
@@ -833,12 +841,7 @@ function initialize(){
 /****** dynamic elements (altered by user inputs) ******/
 animeID = 0;
 function animate() {
-
-	//debug.innerHTML += "<br>start animating";
-
-	//get user-set parameters
 	modeCx = document.getElementById('mode');
-	//debug.innerHTML += "<br>play-stop slider is checked? "+modeCx.checked;
 	animeID = requestAnimationFrame(animate);//comment it out to prevent redrawing every split second
 	//bRect = cvs.getBoundingClientRect();//apparently not needed
 	
@@ -851,7 +854,6 @@ function animate() {
 	tiles.draw();
 	bargraph.draw();
 	draw_cropbox();
-
 	
 	/****** debug: draw a circle ******/
 	/*
